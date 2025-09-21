@@ -81,7 +81,7 @@ async def handle_inline_confirm(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     # Сохраняем пользователя в БД
     await state.clear()
-    await callback.message.edit_text(text=render("assets/templates/auth/registration_finished.html")) # шаблоны
+    await callback.message.edit_text(text=render("assets/templates/auth/finish_registration.html")) # шаблоны
     await callback.answer()
     
 @router.callback_query(lambda callback: callback.data == "restart")
