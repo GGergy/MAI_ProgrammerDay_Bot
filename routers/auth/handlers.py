@@ -5,6 +5,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQu
 
 from routers.auth.states import RegisterStates
 from routers.shared.keyboards import delete_markup
+from routers.auth.keyboards import confirmation_keyboard
 from utils.models import conn, User, Faculty
 from utils.templateutil import render
 
@@ -59,20 +60,12 @@ async def handle_register_faculty(message: types.Message, state: FSMContext):
     
     # дальше должна быть клавиатура с кнопками подтвердить/перезаполнить, в случае подтвердить сохраняем юзера в бд, в случае перезаполнить возвращаем state на register_username
     # Вакханалия начинается здесь
-    
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm")],
-            [InlineKeyboardButton(text="🔄 Заполнить заново", callback_data="restart")]
-        ],
-        resize_keyboard=True
-        )
-    
+
     await message.bot.edit_message_text(
         text=render("assets/templates/auth/check_data.html", username=data["username"], faculty=2),
         chat_id=message.chat.id, 
         message_id=data["msg_id"], 
-        reply_markup=keyboard
+        reply_markup=confirmation_keyboard
     )
     await message.delete()
     
