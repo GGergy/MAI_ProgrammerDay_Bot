@@ -1,10 +1,11 @@
 from aiogram import types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from aiogram.types import CallbackQuery
 
 from routers.auth.states import RegisterStates
 from routers.auth.keyboards import confirmation_keyboard
+from routers.main_menu.keyboards import main_menu_keyboard
 from routers.auth.callbacks import ConfirmProfileReg, RecreateProfileReg
 from routers.shared.keyboards import delete_markup
 from utils.models import conn, User, Faculty
@@ -17,11 +18,34 @@ router = Router(name=__name__)
 async def start(message: types.Message, state: FSMContext):
     with conn() as session:
         user = session.get(User, message.chat.id)
-    msg = await message.answer(text=render("auth/hello.html", user=user))
-    if not user:
-        await state.set_state(RegisterStates.username)
-        await state.update_data(msg_id=msg.message_id)
+    #TODO На самом деле, я хз, как сделать reply_markup без ветвления else
+    #TODO ветвление not user может засбоить если в базе недостаточно данных (нету faculty например но есть telegram_id)
+    if not user: # if not authorized
+        msg = await message.answer(text=render("auth/hello.html", user=user))
+        await state.set_state(RegisterStates.username) 
+    else: # if authorized (already in database)
+        msg = await message.answer(text=render("auth/hello.html", user=user), 
+                                   reply_markup=main_menu_keyboard)
+    await state.update_data(msg_id=msg.message_id)
     await message.delete()
+    
+    
+#TODO Переместить безобразие в routers/main_menu
+from routers.main_menu.callbacks import CheckProfile
+@router.callback_query(CheckProfile.filter())
+async def handle_check_profile(query: CallbackQuery, state: FSMContext):
+    msg_id = query.message.message_id
+    with conn() as session:
+        user = session.get(User, query.message.chat.id)
+        print(user)
+    await query.message.bot.edit_message_text(
+        text=render("main_menu/profile.html", user=user),
+        chat_id=query.message.chat.id,
+        message_id=msg_id,
+    )
+    await state.update_data(msg_id=msg_id)
+    await query.answer()
+# Конец безобразия #TODO
 
 
 @router.message(RegisterStates.username)
@@ -73,7 +97,7 @@ async def handle_inline_confirm(query: CallbackQuery, state: FSMContext):
         session.add(user)
         session.commit()
     await state.clear()
-    await query.message.edit_text(text=render("auth/finish_registration.html"))  # шаблоны
+    await query.message.edit_text(text=render("auth/finish_registration.html"))
     await query.answer()
 
 
