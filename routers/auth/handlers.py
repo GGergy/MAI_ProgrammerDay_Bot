@@ -1,8 +1,11 @@
 from aiogram import types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
 from routers.auth.states import RegisterStates
+from routers.auth.keyboards import confirmation_keyboard
+from routers.auth.callbacks import ConfirmProfileReg, RecreateProfileReg
 from routers.shared.keyboards import delete_markup
 from utils.models import conn, User, Faculty
 from utils.templateutil import render
@@ -16,7 +19,6 @@ async def start(message: types.Message, state: FSMContext):
         user = session.get(User, message.chat.id)
     msg = await message.answer(text=render("auth/hello.html", user=user))
     if not user:
-        print(1)
         await state.set_state(RegisterStates.username)
         await state.update_data(msg_id=msg.message_id)
     await message.delete()
@@ -52,9 +54,38 @@ async def handle_register_faculty(message: types.Message, state: FSMContext):
                                          exception="Такого факультета не существует!"), reply_markup=delete_markup)
         await message.delete()
         return
+    await state.update_data(faculty_id=faculty.id)
     data = await state.get_data()
-    await message.bot.edit_message_text(text=render("auth/check_data.html", username=data["username"], faculty=faculty.id),
-                                        chat_id=message.chat.id, message_id=data["msg_id"])
-    await state.clear()
+    await message.bot.edit_message_text(
+        text=render("auth/check_data.html", username=data["username"], faculty=data["faculty_id"]),
+        chat_id=message.chat.id,
+        message_id=data["msg_id"],
+        reply_markup=confirmation_keyboard
+    )
     await message.delete()
-    # дальше должна быть клавиатура с кнопками подтвердить/перезаполнить, в случае подтвердить сохраняем юзера в бд, в случае перезаполнить возвращаем state на register_username
+
+
+@router.callback_query(ConfirmProfileReg.filter())
+async def handle_inline_confirm(query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    with conn() as session:
+        user = User(telegram_id=query.message.chat.id, username=data["username"], faculty_id=data["faculty_id"])
+        session.add(user)
+        session.commit()
+    await state.clear()
+    await query.message.edit_text(text=render("auth/finish_registration.html"))  # шаблоны
+    await query.answer()
+
+
+@router.callback_query(RecreateProfileReg.filter())
+async def handle_inline_restart(query: CallbackQuery, state: FSMContext):
+    msg_id = query.message.message_id
+    await query.message.bot.edit_message_text(
+        text=render("auth/restart_registration.html", username=query.message.text),
+        chat_id=query.message.chat.id,
+        message_id=msg_id,
+        reply_markup=delete_markup,
+    )
+    await state.set_state(RegisterStates.username)
+    await state.update_data(msg_id=msg_id)
+    await query.answer()
