@@ -28,24 +28,6 @@ async def start(message: types.Message, state: FSMContext):
                                    reply_markup=main_menu_keyboard)
     await state.update_data(msg_id=msg.message_id)
     await message.delete()
-    
-    
-#TODO Переместить безобразие в routers/main_menu
-from routers.main_menu.callbacks import CheckProfile
-@router.callback_query(CheckProfile.filter())
-async def handle_check_profile(query: CallbackQuery, state: FSMContext):
-    msg_id = query.message.message_id
-    with conn() as session:
-        user = session.get(User, query.message.chat.id)
-        print(user)
-    await query.message.bot.edit_message_text(
-        text=render("main_menu/profile.html", user=user),
-        chat_id=query.message.chat.id,
-        message_id=msg_id,
-    )
-    await state.update_data(msg_id=msg_id)
-    await query.answer()
-# Конец безобразия #TODO
 
 
 @router.message(RegisterStates.username)
