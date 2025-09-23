@@ -3,7 +3,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
-from routers.main_menu.callbacks import ReceiveQuestion, CheckProfile, CheckLadder, CheckPrizes
+from routers.main_menu.callbacks import CheckProfile, CheckLadder, CheckPrizes, CheckProgress
 from routers.shared.keyboards import delete_markup, menu_markup
 
 from utils.templateutil import render
@@ -11,12 +11,24 @@ from utils.models import conn, User
 
 
 router = Router(name=__name__)
+
 @router.callback_query(CheckProfile.filter())
 async def handle_check_profile(query: CallbackQuery, state: FSMContext):
     with conn() as session:
         user = session.get(User, query.message.chat.id)
     await query.message.edit_text(
         text=render("main_menu/profile.html", user=user),
+        reply_markup=menu_markup,
+    )
+    await query.answer()
+    
+
+@router.callback_query(CheckProgress.filter())
+async def handle_check_progress(query: CallbackQuery, state: FSMContext):
+    with conn() as session:
+        user = session.get(User, query.message.chat.id)
+    await query.message.edit_text(
+        text=render("main_menu/progress.html", user=user),
         reply_markup=menu_markup,
     )
     await query.answer()

@@ -7,6 +7,7 @@ main_menu_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="🚀 Играть 🚀", callback_data=callbacks.ReceiveQuestion().pack())],
         [InlineKeyboardButton(text="👮‍♂️ Профиль 👮‍♀️", callback_data=callbacks.CheckProfile().pack())],
+        [InlineKeyboardButton(text="⭐️ Прогресс ⭐️", callback_data=callbacks.CheckProgress().pack())],
         [InlineKeyboardButton(text="🎖 Таблица лидеров 🎖", callback_data=callbacks.CheckLadder().pack())],
         [InlineKeyboardButton(text="🔐 Призы 🔓", callback_data=callbacks.CheckPrizes().pack())],
     ],

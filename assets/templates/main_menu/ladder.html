@@ -1,4 +1,4 @@
 <b>Таблица лидеров</b>
 
-{% for user in ladder %}{{ (page-1)*10 + loop.index }}. {{ user.username }} = {{ user.score }} ⭐️
+{% for user in ladder %}{{ page*10 + loop.index }}. {{ user.username }} = {{ user.score }} ⭐️
 {% endfor %}
