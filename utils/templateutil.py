@@ -50,7 +50,7 @@ class SnakeMap():
         row += pattern[0:(one_gap_length + last_gap_length)] + chunk[-1]
         return row
     
-    def generate_snake_map(self, list_of_elems:list, width:int) -> str:
+    def generate_snake_map(self, list_of_elems:list[str], width:int) -> str:
         # Algorithm
         chunks = [list_of_elems[i:i + width] for i in range(0, len(list_of_elems), width)]
         
