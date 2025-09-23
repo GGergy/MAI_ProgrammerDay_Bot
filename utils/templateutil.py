@@ -21,25 +21,24 @@ def render(template_name, **kwargs):
     return template.render(**kwargs)
 
 
-def elems_to_snake_map(list_of_elems:list, width:int) -> str:
-    # Settings
-    width_of_text = 20
-    horizontal_separator = "-"
-    vertical_separator = "|"
-    vertical_path_height = 3
-    
-    # Preparations
-    horizontal_path = horizontal_separator.join( [" " for i in range(4)] )
-    def generate_vertical_path(width:int) -> str:
+class SnakeMap():
+    def __init__(self):
+        # Settings
+        self.width_of_text = 20
+        self.horizontal_separator = "-"
+        self.vertical_separator = "|"
+        self.vertical_path_height = 3
+        
+    def generate_vertical_path(self, width:int) -> str:
         vertical_path = ""
-        for i in range(vertical_path_height):
-            vertical_path += "\n" + " "*(width-len(vertical_separator)) + vertical_separator
+        for i in range(self.vertical_path_height):
+            vertical_path += "\n" + " "*(width-len(self.vertical_separator)) + self.vertical_separator
         return vertical_path
     
-    def generate_row(chunk:list[str]) -> str:
+    def generate_row(self, chunk:list[str]) -> str:
         elems_length = sum(len(elem) for elem in chunk)
-        total_gap_length = width_of_text-elems_length
-        pattern = (" " + horizontal_separator)*width_of_text
+        total_gap_length = self.width_of_text-elems_length
+        pattern = (" " + self.horizontal_separator)*self.width_of_text
         one_gap_length = total_gap_length // (len(chunk)-1)
         last_gap_length = total_gap_length % (len(chunk)-1)
         
@@ -51,22 +50,23 @@ def elems_to_snake_map(list_of_elems:list, width:int) -> str:
         row += pattern[0:(one_gap_length + last_gap_length)] + chunk[-1]
         return row
     
-    # Algorithm
-    chunks = [list_of_elems[i:i + width] for i in range(0, len(list_of_elems), width)]
-    
-    # Reverse elements
-    for i in range(len(chunks)):
-        if i % 2 == 1:
-            chunks[i].reverse()
-    #rows = [horizontal_path.join(chunk) for chunk in chunks]
-    rows = [generate_row(chunk) for chunk in chunks]
-    
-    # Gathering result map
-    result = "\n" + rows[0]
-    for i, row in enumerate(rows[1:]):
-        if i % 2 == 0:
-            result += generate_vertical_path( len(row) )
-        else:
-            result += generate_vertical_path( 0 )
-        result += "\n" + row
-    return result
+    def generate_snake_map(self, list_of_elems:list, width:int) -> str:
+        # Algorithm
+        chunks = [list_of_elems[i:i + width] for i in range(0, len(list_of_elems), width)]
+        
+        # Reverse elements
+        for i in range(len(chunks)):
+            if i % 2 == 1:
+                chunks[i].reverse()
+        #rows = [horizontal_path.join(chunk) for chunk in chunks]
+        rows = [self.generate_row(chunk) for chunk in chunks]
+        
+        # Gathering result map
+        result = "\n" + rows[0]
+        for i, row in enumerate(rows[1:]):
+            if i % 2 == 0:
+                result += self.generate_vertical_path( len(row) )
+            else:
+                result += self.generate_vertical_path( 0 )
+            result += "\n" + row
+        return result
