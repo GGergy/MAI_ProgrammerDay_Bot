@@ -18,8 +18,6 @@ router = Router(name=__name__)
 async def start(message: types.Message, state: FSMContext):
     with conn() as session:
         user = session.get(User, message.chat.id)
-    #TODO На самом деле, я хз, как сделать reply_markup без ветвления else
-    #TODO ветвление not user может засбоить если в базе недостаточно данных (нету faculty например но есть telegram_id)
     if not user: # if not authorized
         msg = await message.answer(text=render("auth/hello.html", user=user))
         await state.set_state(RegisterStates.username) 

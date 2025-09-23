@@ -11,32 +11,19 @@ from utils.models import conn, User
 
 
 router = Router(name=__name__)
-
-
-@router.callback_query(ReceiveQuestion.filter())
-async def handle_receive_question(query: CallbackQuery, state: FSMContext):
-    #TODO Сделать вопросики
-    pass
-
-
 @router.callback_query(CheckProfile.filter())
 async def handle_check_profile(query: CallbackQuery, state: FSMContext):
-    msg_id = query.message.message_id
     with conn() as session:
         user = session.get(User, query.message.chat.id)
-    await query.message.bot.edit_message_text(
+    await query.message.edit_text(
         text=render("main_menu/profile.html", user=user),
-        chat_id=query.message.chat.id,
-        message_id=msg_id,
         reply_markup=menu_markup,
     )
-    await state.update_data(msg_id=msg_id)
     await query.answer()
 
 
 @router.callback_query(CheckLadder.filter())
 async def handle_check_ladder(query: CallbackQuery, state: FSMContext):
-    msg_id = query.message.message_id
     #TODO LADDER
     #with conn() as session:
     #    user = session.get(User, query.message.chat.id)
@@ -54,24 +41,17 @@ async def handle_check_ladder(query: CallbackQuery, state: FSMContext):
         {"username": "Кристина", "score": 100},
              
     ] 
-    await query.message.bot.edit_message_text(
+    await query.message.edit_text(
         text=render("main_menu/ladder.html", ladder=ladder, page=0),
-        chat_id=query.message.chat.id,
-        message_id=msg_id,
         reply_markup=menu_markup,
     )
-    await state.update_data(msg_id=msg_id)
     await query.answer()
 
 
 @router.callback_query(CheckPrizes.filter())
 async def handle_check_ladder(query: CallbackQuery, state: FSMContext):
-    msg_id = query.message.message_id
-    await query.message.bot.edit_message_text(
+    await query.message.edit_text(
         text=render("main_menu/prizes.html"),
-        chat_id=query.message.chat.id,
-        message_id=msg_id,
         reply_markup=menu_markup,
     )
-    await state.update_data(msg_id=msg_id)
     await query.answer()
