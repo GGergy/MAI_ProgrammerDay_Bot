@@ -13,6 +13,7 @@ class Settings:
     log_file: pathlib.Path
     template_dir: pathlib.Path
     redis_url: str
+    cache_lifetime: int
 
     def __post_init__(self):
         for field in dataclasses.fields(self):
