@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery
 from routers.main_menu.callbacks import CheckProfile, CheckLadder, CheckPrizes, CheckProgress
 from routers.shared.keyboards import delete_markup, menu_markup
 
-from utils.templateutil import render
+from utils.templateutil import render, horizontal_map
 from utils.models import conn, User
 
 
@@ -27,8 +27,22 @@ async def handle_check_profile(query: CallbackQuery, state: FSMContext):
 async def handle_check_progress(query: CallbackQuery, state: FSMContext):
     with conn() as session:
         user = session.get(User, query.message.chat.id)
+    #config TODO Переместить в конфиг
+    total_number_of_questions = 12
+    gifts_indexes = (11, 5)
+    
+    number_of_answered = 1 
+    elems = [str(x) for x in range(1, total_number_of_questions+1)]
+    for i in gifts_indexes:
+        elems[i] = "🎁"
+    elems[number_of_answered] = "🐇"
+    
     await query.message.edit_text(
-        text=render("main_menu/progress.html", user=user),
+        text=render(
+            template_name="main_menu/progress.html", 
+            user=user, 
+            snake_map=horizontal_map.generate_map(elems, 6),
+        ),
         reply_markup=menu_markup,
     )
     await query.answer()
