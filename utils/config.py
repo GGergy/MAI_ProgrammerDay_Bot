@@ -14,6 +14,7 @@ class Settings:
     template_dir: pathlib.Path
     redis_url: str
     cache_lifetime: int
+    answer_timeout: int
 
     def __post_init__(self):
         for field in dataclasses.fields(self):

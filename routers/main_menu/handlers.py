@@ -49,7 +49,7 @@ async def handle_check_ladder(query: CallbackQuery, state: FSMContext):
         {"username": "Дмитрий", "score": 600},
         {"username": "Егор", "score": 500},
         {"username": "Женя", "score": 400},
-        {"username": "Зелимхан", "score": 300},
+        {"username": "Зелимхан", "score": "Тебя чеченцы беспокоят"},
         {"username": "Иван", "score": 200},
         {"username": "Кристина", "score": 100},
              

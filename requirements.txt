@@ -1,4 +1,5 @@
 aiogram
-sqlalchemy
+sqlalchemy[asyncio]
+aiosqlite
 jinja2
 redis

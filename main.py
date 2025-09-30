@@ -8,14 +8,16 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.client.default import DefaultBotProperties
 
 from utils.config import settings
-from routers import auth, shared, main_menu
+from utils.models import conn
+from utils import ladder
+from routers import auth, shared, main_menu, questions
 
 
 # storage=RedisStorage.from_url(settings.redis_url)
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 # Роутер shared включается последним!!!
-dp.include_routers(auth.router, main_menu.router, shared.router)
+dp.include_routers(auth.router, main_menu.router, questions.router, shared.router)
 
 bot = Bot(token=settings.tg_bot_token, default=DefaultBotProperties(parse_mode=enums.ParseMode.HTML))
 

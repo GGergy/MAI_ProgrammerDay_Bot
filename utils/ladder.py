@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from sqlalchemy import desc, func
 from utils.config import settings
 
-from utils.models import conn, User, Question, AnsweredQuestion, Answer
+from utils.models import conn, User, Question, AnsweredQuestion, AnswerOption
 
 
 @dataclass
@@ -16,22 +16,20 @@ class LadderPos:
 
 
 class LadderCache:
-    objects = dict()
+    instance: "LadderCache" = None
 
-    def __init__(self, faculty):
-        self.faculty: int = faculty
+    def __init__(self):
         self.cache: list[LadderPos] = []
         self.create_time = 0
-        LadderCache.objects[faculty] = self
 
-    def calculate(self) -> list[LadderPos]:
+    def _calculate(self) -> list[LadderPos]:
         if self.cache and time.time() - self.create_time <= settings.cache_lifetime:
             return self.cache
         with conn() as session:
-            users = session.query(User.telegram_id, User.username, func.sum(Question.pts).label("points")).filter(User.faculty_id == self.faculty)
-            given_answers = users.join(AnsweredQuestion, AnsweredQuestion.user_id == User.telegram_id, isouter=True)
-            answers = given_answers.join(Answer, (Answer.id == AnsweredQuestion.answer_id) & Answer.correct, isouter=True)
-            questions = answers.join(Question, Answer.question_id == Question.id, isouter=True).group_by(User.telegram_id)
+            users = session.query(User.telegram_id, User.username, func.count().label("points"))
+            given_answers = users.join(AnsweredQuestion, AnsweredQuestion.user_id == User.telegram_id)
+            answers = given_answers.join(AnswerOption, (AnswerOption.id == AnsweredQuestion.answer_id) & AnswerOption.correct)
+            questions = answers.join(Question, AnswerOption.question_id == Question.id).group_by(User.telegram_id)
             rating = questions.order_by(desc("points")).all()
         self.cache.clear()
         pos = 1
@@ -42,8 +40,7 @@ class LadderCache:
         return self.cache
 
     @classmethod
-    def get(cls, faculty):
-        obj = cls.objects.get(faculty)
-        if not obj:
-            obj = LadderCache(faculty)
-        return obj.calculate()
+    def get(cls):
+        if not cls.instance:
+            cls.instance = LadderCache()
+        return cls.instance._calculate()

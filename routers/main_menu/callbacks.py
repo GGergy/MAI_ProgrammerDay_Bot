@@ -1,5 +1,6 @@
 from aiogram.filters.callback_data import CallbackData
 
+
 class ReceiveQuestion(CallbackData, prefix="receive_question"):
     ...
 

@@ -1,13 +1,13 @@
 from enum import IntEnum
 
-from sqlalchemy import create_engine, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import relationship, sessionmaker, declarative_base, Mapped, mapped_column
+from sqlalchemy import ForeignKey, UniqueConstraint, create_engine
+from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 from utils.config import settings
 
 
-SqlAlchemyBase = declarative_base()
-
+class SqlAlchemyBase(DeclarativeBase):
+    ...
 
 def create_connection(name):
     connection = f"sqlite:///{name}?check_same_thread=False"
@@ -17,20 +17,22 @@ def create_connection(name):
     return session_generator
 
 
-class FacultyToCategory(SqlAlchemyBase):
-    __tablename__ = "faculty_to_category"
+"""class AsyncConnection:
+    def __init__(self, name):
+        connection = f"sqlite+aiosqlite:///{name}?check_same_thread=False"
+        self._engine = create_async_engine(connection, echo=True)
+        self.session = async_sessionmaker(bind=self._engine)
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    faculty_id: Mapped[int] = mapped_column(ForeignKey("faculties.id"))
-    category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"))
+    async def create_all(self):
+        async with self._engine.begin() as session:
+            await session.run_sync(SqlAlchemyBase.metadata.create_all)"""
 
 
 class User(SqlAlchemyBase):
     __tablename__ = "users"
 
     telegram_id: Mapped[int] = mapped_column(primary_key=True)
-    username: Mapped[str] = mapped_column(nullable=True)
-    faculty_id: Mapped[int] = mapped_column(ForeignKey("faculties.id"), nullable=True)
+    username: Mapped[str] = mapped_column()
 
 
 class Question(SqlAlchemyBase):
@@ -40,16 +42,21 @@ class Question(SqlAlchemyBase):
         BUTTONS = 1
         MESSAGE = 2
 
+    class QStatuses(IntEnum):
+        OPEN = 1
+        PENDING = 2
+        CLOSED = 3
+
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     text: Mapped[str] = mapped_column()
     type: Mapped[QTypes] = mapped_column()
-    pts: Mapped[int] = mapped_column()
-    category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"))
+    status: Mapped[QStatuses] = mapped_column(default=QStatuses.OPEN)
+    qrcode_id: Mapped[int] = mapped_column(ForeignKey("qrcodes.id"))
 
-    answers: Mapped[list["Answer"]] = relationship(backref="question")
+    answers: Mapped[list["AnswerOption"]] = relationship(backref="question")
 
 
-class Answer(SqlAlchemyBase):
+class AnswerOption(SqlAlchemyBase):
     __tablename__ = "answers"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -58,20 +65,12 @@ class Answer(SqlAlchemyBase):
     correct: Mapped[bool] = mapped_column()
 
 
-class Category(SqlAlchemyBase):
-    __tablename__ = "categories"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    title: Mapped[str] = mapped_column()
-
-    faculties: Mapped[list["Faculty"]] = relationship(secondary="faculty_to_category", backref="categories")
-    questions: Mapped[list["Question"]] = relationship(backref="category")
-
-
-class Faculty(SqlAlchemyBase):
-    __tablename__ = "faculties"
+class QRcode(SqlAlchemyBase):
+    __tablename__ = "qrcodes"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+
+    questions: Mapped[list["Question"]] = relationship(backref="qrcode")
 
 
 class AnsweredQuestion(SqlAlchemyBase):
@@ -84,4 +83,4 @@ class AnsweredQuestion(SqlAlchemyBase):
     answer_id: Mapped[int] = mapped_column(ForeignKey("answers.id"))
 
 
-conn: sessionmaker = create_connection(settings.db_file)
+conn = create_connection(settings.db_file)
