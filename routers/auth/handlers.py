@@ -1,5 +1,3 @@
-import asyncio
-
 from aiogram import types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -8,9 +6,7 @@ from aiogram.types import CallbackQuery
 from routers.questions.keyboards import gen_question_kb
 from routers.questions.states import wait_answer
 from routers.shared.keyboards import delete_markup
-from routers.shared.handlers import terminator
-from utils.config import settings
-from utils.models import conn, User, QRcode, Question, AnsweredQuestion
+from utils.models import conn, User, QRcode, Question, AnsweredQuestion, Pending
 from utils.templateutil import render
 
 router = Router(name=__name__)
@@ -24,13 +20,14 @@ async def start(message: types.Message, state: FSMContext):
             user = User(telegram_id=message.chat.id, username=message.from_user.username)
             session.add(user)
             session.commit()
+            user = session.get(User, message.chat.id)
 
     qr_id = message.text.split(" ")[-1]
     if qr_id == "/start":
         await message.answer(text=render("auth/hello.html", user=user), reply_markup=delete_markup)
         await message.delete()
         return
-    if terminator.check_lock(user.telegram_id):
+    if Pending.get_lock(session, user.telegram_id):
         await message.answer(text=render("questions/you_locked.html"), reply_markup=delete_markup)
         await message.delete()
         return
@@ -54,13 +51,17 @@ async def start(message: types.Message, state: FSMContext):
         question: Question = session.query(Question).filter(
             (Question.qrcode_id == qr_id) & (Question.status == Question.QStatuses.OPEN)).first()
         if not question:
-            await message.answer(text=render("questions/qr_empty.html"), reply_markup=delete_markup)
+            print(Pending.get_num_pending(session, qr_id))
+            await message.answer(
+                text=render("questions/qr_empty.html", pending_count=Pending.get_num_pending(session, qr_id)),
+                reply_markup=delete_markup)
             return
 
         question.status = Question.QStatuses.PENDING
+        locker = Pending(question_id=question.id, user_id=user.telegram_id)
+        session.add(locker)
         session.commit()
 
-        terminator.malloc(question.id, user.telegram_id)
         if question.type == Question.QTypes.BUTTONS:
             mk = gen_question_kb(question.answers)
         else:

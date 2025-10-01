@@ -1,13 +1,16 @@
+from datetime import datetime
 from enum import IntEnum
+from types import NoneType
 
 from sqlalchemy import ForeignKey, UniqueConstraint, create_engine
-from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column, sessionmaker
+from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column, sessionmaker, Session
 
 from utils.config import settings
 
 
 class SqlAlchemyBase(DeclarativeBase):
     ...
+
 
 def create_connection(name):
     connection = f"sqlite:///{name}?check_same_thread=False"
@@ -26,6 +29,23 @@ def create_connection(name):
     async def create_all(self):
         async with self._engine.begin() as session:
             await session.run_sync(SqlAlchemyBase.metadata.create_all)"""
+
+
+class Pending(SqlAlchemyBase):
+    __tablename__ = "pendings"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.telegram_id"), unique=True)
+    question_id: Mapped[int] = mapped_column(ForeignKey("questions.id"), unique=True)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+
+    @classmethod
+    def get_lock(cls, session: Session, user_id) -> "NoneType | Pending":
+        return session.query(cls).filter(cls.user_id == user_id).one_or_none()
+
+    @classmethod
+    def get_num_pending(cls, session: Session, qr_id) -> int:
+        return session.query(cls).join(Question, (Question.id == cls.question_id) & (Question.qrcode_id == qr_id)).count()
 
 
 class User(SqlAlchemyBase):

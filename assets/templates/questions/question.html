@@ -1,1 +1,5 @@
+У вас есть пять минут, чтобы ответить на этот вопрос
 {{ question.text }}
+{% if question.type == question.QTypes.MESSAGE %}
+Ответ напишите текстом
+{% endif %}
