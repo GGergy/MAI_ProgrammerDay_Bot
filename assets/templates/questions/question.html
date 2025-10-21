@@ -2,4 +2,9 @@
 {{ question.text }}
 {% if question.type == question.QTypes.MESSAGE %}
 Ответ напишите текстом
+{% else %}
+Выбери ответ из предложенных
+{% for ans in answers %}
+<blockquote>№{{ loop.index }}. {{ ans }}</blockquote>
+{% endfor %}
 {% endif %}

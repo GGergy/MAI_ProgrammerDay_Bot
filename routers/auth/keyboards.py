@@ -10,3 +10,7 @@ confirmation_keyboard = InlineKeyboardMarkup(
     ],
     resize_keyboard=True
 )
+
+
+refresh_stats_button = InlineKeyboardButton(text="🔄 Обновить статистику", callback_data=callbacks.RefreshStats().pack())
+frozen_refresh_stats_button = InlineKeyboardButton(text="🔄 Обновить статистику", callback_data=callbacks.RefreshStats(deletable=False).pack())

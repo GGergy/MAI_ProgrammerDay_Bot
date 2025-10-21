@@ -40,8 +40,9 @@ async def handle_button_answer(query: CallbackQuery, callback_data: GiveAnswer):
 @router.message(wait_answer)
 async def handle_message_answer(message: types.Message, state: FSMContext):
     question_id = await state.get_value("question_id")
+    msg_id = await state.get_value("msg_id")
+    await state.clear()
     with conn() as session:
-        await state.clear()
         lock = Pending.get_lock(session, message.chat.id)
         if not lock or lock.question_id != question_id:
             await message.answer(text=render("questions/expired.html"), reply_markup=delete_markup)
@@ -61,5 +62,6 @@ async def handle_message_answer(message: types.Message, state: FSMContext):
         session.add(answered_q)
         session.commit()
 
-        await message.answer(text=render("questions/result.html", correct=bool(answer)), reply_markup=delete_markup)
+        await message.bot.edit_message_text(text=render("questions/result.html", correct=bool(answer)),
+                                            reply_markup=delete_markup, message_id=msg_id)
         await message.delete()

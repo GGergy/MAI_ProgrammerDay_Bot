@@ -45,7 +45,8 @@ class Pending(SqlAlchemyBase):
 
     @classmethod
     def get_num_pending(cls, session: Session, qr_id) -> int:
-        return session.query(cls).join(Question, (Question.id == cls.question_id) & (Question.qrcode_id == qr_id)).count()
+        return session.query(cls).join(Question,
+                                       (Question.id == cls.question_id) & (Question.qrcode_id == qr_id)).count()
 
 
 class User(SqlAlchemyBase):
@@ -75,6 +76,10 @@ class Question(SqlAlchemyBase):
 
     answers: Mapped[list["AnswerOption"]] = relationship(backref="question")
 
+    @classmethod
+    def get_open(cls, session: Session, qr_id) -> "NoneType | Question":
+        return session.query(cls).filter((cls.qrcode_id == qr_id) & (cls.status == cls.QStatuses.OPEN)).first()
+
 
 class AnswerOption(SqlAlchemyBase):
     __tablename__ = "answers"
@@ -101,6 +106,22 @@ class AnsweredQuestion(SqlAlchemyBase):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.telegram_id"))
     question_id: Mapped[int] = mapped_column(ForeignKey("questions.id"))
     answer_id: Mapped[int] = mapped_column(ForeignKey("answers.id"))
+
+    @classmethod
+    def num_founded_qrs(cls, session: Session, user_id: int) -> int:
+        return session.query(cls).filter(cls.user_id == user_id).count()
+
+    @classmethod
+    def num_correct_questions(cls, session: Session, user_id: int) -> int:
+        return session.query(cls).filter(cls.user_id == user_id).join(
+            AnswerOption, (AnswerOption.id == cls.answer_id) & AnswerOption.correct).count()
+
+    @classmethod
+    def get_qr_lock(cls, session: Session, user_id: int, qr_id: int) -> bool:
+        return bool(
+            session.query(cls).filter(cls.user_id == user_id).join(
+                Question, (Question.id == cls.question_id) & (Question.qrcode_id == qr_id)).first()
+        )
 
 
 conn = create_connection(settings.db_file)

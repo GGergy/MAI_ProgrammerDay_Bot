@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import sys
 
@@ -8,9 +9,8 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.client.default import DefaultBotProperties
 
 from utils.config import settings
-from utils.models import conn
-from utils import ladder
 from routers import auth, shared, main_menu, questions
+from utils.fixtures import load_questions
 
 
 # storage=RedisStorage.from_url(settings.redis_url)
@@ -20,7 +20,7 @@ dp = Dispatcher(storage=storage)
 dp.include_routers(auth.router, main_menu.router, questions.router, shared.router)
 
 bot = Bot(token=settings.tg_bot_token, default=DefaultBotProperties(parse_mode=enums.ParseMode.HTML))
-
+load_questions(json.load(open("assets/secure/fixture.json", encoding="utf-8")))
 
 async def main() -> None:
     asyncio.create_task(shared.handlers.scheduler())
